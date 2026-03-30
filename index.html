@@ -308,12 +308,15 @@
         <div class="sidebar-section">
             <h3>Legend</h3>
             <div class="legend">
-                <div class="legend-item"><div class="legend-dot" style="background:#e94560"></div> Flagship (2017)</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div> Early (2018-2020)</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> Growth (2021-2023)</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Expansion (2024)</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#818cf8"></div> Recent (2025)</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#facc15"></div> New / Coming (2026)</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#e94560"></div> 2017</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div> 2018-19</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div> 2020</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#e67e22"></div> 2021</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#f1c40f"></div> 2022</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#2ecc71"></div> 2023</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#3498db"></div> 2024</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#9b59b6"></div> 2025</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#1abc9c"></div> 2026</div>
             </div>
         </div>
 
@@ -500,25 +503,20 @@ const locations = [
 
 // ─── Color Mapping ──────────────────────────────────────────────────
 function getColor(year, status) {
-    if (status === "coming") return "#facc15";
-    if (status === "new2026") return "#facc15";
-    if (year <= 2017) return "#e94560";
-    if (year <= 2020) return "#f97316";
-    if (year <= 2023) return "#22c55e";
-    if (year === 2024) return "#3b82f6";
-    if (year === 2025) return "#818cf8";
-    return "#facc15";
+    if (year <= 2017) return "#e94560";   // Red - Founding
+    if (year <= 2019) return "#ff6b6b";   // Light red - Early AR
+    if (year === 2020) return "#f97316";  // Orange - First multi-state
+    if (year === 2021) return "#e67e22";  // Dark orange
+    if (year === 2022) return "#f1c40f";  // Yellow
+    if (year === 2023) return "#2ecc71";  // Green
+    if (year === 2024) return "#3498db";  // Blue
+    if (year === 2025) return "#9b59b6";  // Purple
+    if (year === 2026) return "#1abc9c";  // Teal - New/Coming
+    return "#95a5a6";
 }
 
 function getRadius(count) {
-    if (count === 0) return 5;
-    if (count <= 2) return 6;
-    if (count <= 5) return 7;
-    if (count <= 10) return 9;
-    if (count <= 20) return 11;
-    if (count <= 30) return 13;
-    if (count <= 50) return 15;
-    return 18;
+    return 7;
 }
 
 function statusLabel(status) {
