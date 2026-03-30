@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7 Brew Coffee - US Locations Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f1923;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            padding: 16px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 3px solid #e94560;
+            flex-shrink: 0;
+        }
+
+        header h1 {
+            font-size: 1.6rem;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        header h1 span {
+            color: #e94560;
+            font-weight: 800;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 24px;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-box .num {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #e94560;
+        }
+
+        .stat-box .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8899aa;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #map {
+            flex: 1;
+            min-height: 0;
+        }
+
+        .sidebar {
+            width: 380px;
+            background: #141d2b;
+            overflow-y: auto;
+            border-left: 2px solid #1e2d3d;
+            flex-shrink: 0;
+        }
+
+        .sidebar-section {
+            padding: 16px 20px;
+            border-bottom: 1px solid #1e2d3d;
+        }
+
+        .sidebar-section h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #e94560;
+            margin-bottom: 12px;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+        }
+
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #2a3a4a;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 14px;
+            padding-left: 16px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -17px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #e94560;
+            border: 2px solid #0f1923;
+        }
+
+        .timeline-year {
+            font-weight: 700;
+            color: #e94560;
+            font-size: 0.85rem;
+        }
+
+        .timeline-text {
+            font-size: 0.78rem;
+            color: #8899aa;
+            line-height: 1.4;
+        }
+
+        .state-list {
+            max-height: 340px;
+            overflow-y: auto;
+        }
+
+        .state-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #1a2636;
+            cursor: pointer;
+            transition: background 0.2s;
+            padding: 6px 4px;
+            border-radius: 4px;
+        }
+
+        .state-row:hover {
+            background: #1a2a3d;
+        }
+
+        .state-name {
+            font-size: 0.82rem;
+            font-weight: 500;
+        }
+
+        .state-count {
+            font-size: 0.78rem;
+            background: #1a2a3d;
+            padding: 2px 10px;
+            border-radius: 12px;
+            color: #e94560;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-open { background: #0d4b2e; color: #4ade80; }
+        .status-coming { background: #4a3a0d; color: #facc15; }
+        .status-new { background: #1a1a4e; color: #818cf8; }
+
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 5px 14px;
+            border: 1px solid #2a3a4a;
+            background: transparent;
+            color: #8899aa;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            border-color: #e94560;
+            color: #e94560;
+            background: rgba(233, 69, 96, 0.1);
+        }
+
+        .filter-btn:hover {
+            border-color: #e94560;
+            color: #fff;
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: #1a2636;
+            color: #e0e0e0;
+            border-radius: 8px;
+            border: 1px solid #e94560;
+        }
+
+        .leaflet-popup-tip { background: #1a2636; }
+
+        .popup-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .popup-detail {
+            font-size: 0.82rem;
+            color: #8899aa;
+            line-height: 1.5;
+        }
+
+        .popup-detail strong { color: #e94560; }
+
+        .state-list::-webkit-scrollbar,
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .state-list::-webkit-scrollbar-track,
+        .sidebar::-webkit-scrollbar-track {
+            background: #0f1923;
+        }
+
+        .state-list::-webkit-scrollbar-thumb,
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #2a3a4a;
+            border-radius: 3px;
+        }
+
+        @media (max-width: 900px) {
+            .main-content { flex-direction: column; }
+            .sidebar { width: 100%; max-height: 45vh; border-left: none; border-top: 2px solid #1e2d3d; }
+            #map { min-height: 55vh; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1><span>7</span> Brew Coffee <span>|</span> US Locations Dashboard</h1>
+    <div class="header-stats">
+        <div class="stat-box">
+            <div class="num">665+</div>
+            <div class="label">Total Locations</div>
+        </div>
+        <div class="stat-box">
+            <div class="num">38</div>
+            <div class="label">States</div>
+        </div>
+        <div class="stat-box">
+            <div class="num">2017</div>
+            <div class="label">Founded</div>
+        </div>
+    </div>
+</header>
+
+<div class="main-content">
+    <div id="map"></div>
+
+    <div class="sidebar">
+        <div class="sidebar-section">
+            <h3>Legend</h3>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#e94560"></div> Flagship (2017)</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div> Early (2018-2020)</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> Growth (2021-2023)</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Expansion (2024)</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#818cf8"></div> Recent (2025)</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#facc15"></div> New / Coming (2026)</div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Filter by Status</h3>
+            <div class="filter-bar">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="open">Open</button>
+                <button class="filter-btn" data-filter="coming">Coming Soon</button>
+                <button class="filter-btn" data-filter="new2026">New 2026</button>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Expansion Timeline</h3>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-year">2017</div>
+                    <div class="timeline-text">Founded in Rogers, AR. First stand opens at 2101 S 52nd St.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2018-2019</div>
+                    <div class="timeline-text">Expands across NW Arkansas: Bentonville, Springdale, Fayetteville, Little Rock.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2020</div>
+                    <div class="timeline-text">Multi-state expansion begins: Missouri, Oklahoma, Texas, Alabama.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2021-2022</div>
+                    <div class="timeline-text">Rapid scale-up. 14 locations at start of 2022, growing fast. Tennessee, Kentucky, Indiana enter.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2023</div>
+                    <div class="timeline-text">Major growth push. Florida, Georgia, Mississippi, Louisiana, Kansas, Nebraska join.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2024</div>
+                    <div class="timeline-text">174 locations at start of year. Expands to Ohio, Illinois, Wisconsin, Colorado, Virginia, N. Carolina, S. Carolina, Michigan, Iowa.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2025</div>
+                    <div class="timeline-text">Hits 500 locations by October. New York, Pennsylvania, Connecticut, Utah, Wyoming, Minnesota enter.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2026</div>
+                    <div class="timeline-text">665+ locations, 38 states. New Jersey, West Virginia, South Dakota, North Dakota open. California coming soon.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Locations by State</h3>
+            <div class="state-list" id="stateList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ─── 7 Brew Location Data ───────────────────────────────────────────
+// Compiled from web research (ScrapeHero, search results, news articles, Yelp)
+// Coordinates are representative city centers per state for map display.
+const locations = [
+    // ── FLAGSHIP / ORIGIN (2017) ──
+    { state: "Arkansas", abbr: "AR", lat: 36.3321, lng: -94.1185, count: 41, status: "open", year: 2017,
+      cities: "Rogers (HQ/Original), Bentonville, Springdale, Fayetteville, Little Rock, North Little Rock, Fort Smith, Jonesboro, Conway, Russellville",
+      note: "Birthplace of 7 Brew. Original stand: 2101 S 52nd St, Rogers, AR" },
+
+    // ── EARLY EXPANSION (2018-2020) ──
+    { state: "Missouri", abbr: "MO", lat: 38.5767, lng: -92.1736, count: 32, status: "open", year: 2020,
+      cities: "Springfield (7 locations), St. Louis, O'Fallon, Florissant, Columbia, Joplin, Lee's Summit, Kansas City",
+      note: "Springfield alone has 7 stands. Columbia popular with Mizzou students." },
+    { state: "Oklahoma", abbr: "OK", lat: 35.4676, lng: -97.5164, count: 21, status: "open", year: 2020,
+      cities: "Oklahoma City, Tulsa, Norman, Broken Arrow, Edmond, Stillwater",
+      note: "Early expansion market from Arkansas." },
+    { state: "Texas", abbr: "TX", lat: 31.9686, lng: -99.9018, count: 98, status: "open", year: 2020,
+      cities: "Dallas, Fort Worth, Houston, San Antonio, Austin, El Paso, Lubbock, Amarillo, Waco, Tyler, Magnolia, Conroe, Red Oak",
+      note: "#1 state by location count (14% of all stands). 200+ more planned." },
+    { state: "Alabama", abbr: "AL", lat: 32.3182, lng: -86.9023, count: 23, status: "open", year: 2020,
+      cities: "Huntsville, Birmingham, Montgomery, Mobile, Tuscaloosa, Auburn, Decatur",
+      note: "Huntsville stand known for friendly staff and quick service." },
+
+    // ── GROWTH PHASE (2021-2023) ──
+    { state: "Tennessee", abbr: "TN", lat: 35.5175, lng: -86.5804, count: 21, status: "open", year: 2021,
+      cities: "Nashville, Memphis, Knoxville, Chattanooga, Murfreesboro, Clarksville",
+      note: "" },
+    { state: "Kentucky", abbr: "KY", lat: 37.8393, lng: -84.2700, count: 20, status: "open", year: 2021,
+      cities: "Louisville, Lexington, Bowling Green, Owensboro, Covington",
+      note: "" },
+    { state: "Indiana", abbr: "IN", lat: 40.2672, lng: -86.1349, count: 19, status: "open", year: 2022,
+      cities: "Indianapolis, Fort Wayne, Evansville, South Bend, Carmel, Fishers",
+      note: "" },
+    { state: "Florida", abbr: "FL", lat: 27.6648, lng: -81.5158, count: 29, status: "open", year: 2023,
+      cities: "Tallahassee, Jacksonville, Orlando, Tampa, Lake Worth, Bradenton, Middleburg, Belleview",
+      note: "Dominates 2026 expansion strategy. Multiple new opens in Jan 2026." },
+    { state: "Georgia", abbr: "GA", lat: 32.1656, lng: -82.9001, count: 16, status: "open", year: 2023,
+      cities: "Atlanta, Savannah, Augusta, Macon, Athens, Columbus",
+      note: "Continues to add new locations." },
+    { state: "Mississippi", abbr: "MS", lat: 32.3547, lng: -89.3985, count: 10, status: "open", year: 2023,
+      cities: "Flowood, Jackson, Hattiesburg, Gulfport, Southaven, Tupelo",
+      note: "" },
+    { state: "Louisiana", abbr: "LA", lat: 30.9843, lng: -91.9623, count: 8, status: "open", year: 2023,
+      cities: "Shreveport, Bossier City, Baton Rouge, Lafayette, Monroe",
+      note: "Expanded from Arkansas origins into Louisiana." },
+    { state: "Kansas", abbr: "KS", lat: 39.0119, lng: -98.4842, count: 6, status: "open", year: 2023,
+      cities: "Wichita, Overland Park, Topeka, Olathe, Lawrence",
+      note: "" },
+    { state: "Nebraska", abbr: "NE", lat: 41.4925, lng: -99.9018, count: 4, status: "open", year: 2023,
+      cities: "Omaha, Lincoln, Bellevue",
+      note: "" },
+
+    // ── EXPANSION PHASE (2024) ──
+    { state: "Ohio", abbr: "OH", lat: 40.4173, lng: -82.9071, count: 21, status: "open", year: 2024,
+      cities: "Columbus, Cleveland, Cincinnati, Dayton, Toledo, Newark, Powell, Delaware, Lewis Center, Kent",
+      note: "19+ more planned. Sawmill Rd (May 2026), Ikea Way (Oct 2026)." },
+    { state: "Illinois", abbr: "IL", lat: 40.6331, lng: -89.3985, count: 14, status: "open", year: 2024,
+      cities: "Chicago suburbs, Algonquin, East Peoria, Springfield, Rockford, Champaign",
+      note: "East Peoria opening late summer/fall 2026." },
+    { state: "Wisconsin", abbr: "WI", lat: 43.7844, lng: -88.7879, count: 8, status: "open", year: 2024,
+      cities: "Brookfield, Milwaukee, Madison, Green Bay, Appleton",
+      note: "" },
+    { state: "Colorado", abbr: "CO", lat: 39.5501, lng: -105.7821, count: 7, status: "open", year: 2024,
+      cities: "Denver, Colorado Springs, Aurora, Fort Collins",
+      note: "" },
+    { state: "Virginia", abbr: "VA", lat: 37.4316, lng: -78.6569, count: 8, status: "open", year: 2024,
+      cities: "Virginia Beach, Richmond, Danville, Defiance, Norfolk, Chesapeake",
+      note: "Expanding south from PA/NJ into Northern Virginia." },
+    { state: "North Carolina", abbr: "NC", lat: 35.7596, lng: -79.0193, count: 6, status: "open", year: 2024,
+      cities: "Charlotte, Raleigh, Durham, Greensboro, Fayetteville",
+      note: "Charlotte and Raleigh-Durham metro growth planned." },
+    { state: "South Carolina", abbr: "SC", lat: 33.8361, lng: -81.1637, count: 5, status: "open", year: 2024,
+      cities: "Charleston, Columbia, Greenville, Myrtle Beach",
+      note: "" },
+    { state: "Michigan", abbr: "MI", lat: 44.3148, lng: -85.6024, count: 5, status: "open", year: 2024,
+      cities: "Allen Park, Detroit metro, Grand Rapids, Lansing",
+      note: "" },
+    { state: "Iowa", abbr: "IA", lat: 41.8780, lng: -93.0977, count: 4, status: "open", year: 2024,
+      cities: "Des Moines, Cedar Rapids, Marshalltown, Davenport",
+      note: "Marshalltown opening planned." },
+
+    // ── RECENT ENTRIES (2025) ──
+    { state: "New York", abbr: "NY", lat: 42.1657, lng: -74.9481, count: 7, status: "open", year: 2025,
+      cities: "Colonie, Poughkeepsie, Queensbury, Syracuse, Rochester, New Hartford, Cortland, Amherst, Lockport, Dunkirk",
+      note: "61 new locations planned across New York." },
+    { state: "Pennsylvania", abbr: "PA", lat: 41.2033, lng: -77.1945, count: 4, status: "open", year: 2025,
+      cities: "Manchester Township (approved Jan 2026), Pittsburgh area, Allentown",
+      note: "" },
+    { state: "Connecticut", abbr: "CT", lat: 41.6032, lng: -73.0877, count: 2, status: "open", year: 2025,
+      cities: "Orange, North Haven",
+      note: "2 more locations planned." },
+    { state: "Utah", abbr: "UT", lat: 39.3210, lng: -111.0937, count: 3, status: "open", year: 2025,
+      cities: "Provo, Salt Lake City area",
+      note: "" },
+    { state: "Wyoming", abbr: "WY", lat: 43.0760, lng: -107.2903, count: 2, status: "open", year: 2025,
+      cities: "Casper, Cheyenne",
+      note: "" },
+    { state: "Minnesota", abbr: "MN", lat: 46.7296, lng: -94.6859, count: 4, status: "open", year: 2025,
+      cities: "Apple Valley, Vadnais Heights, Minnetonka, Maplewood",
+      note: "Goal: 60+ stands in Twin Cities by 2030." },
+
+    // ── NEW 2026 / COMING SOON ──
+    { state: "New Jersey", abbr: "NJ", lat: 40.0583, lng: -74.4057, count: 2, status: "new2026", year: 2026,
+      cities: "Clementon (opened Jan 2026), Blackwood, Winslow, Rio Grande",
+      note: "First NJ location opened Jan 2026. 3 more under development." },
+    { state: "West Virginia", abbr: "WV", lat: 38.5976, lng: -80.4549, count: 2, status: "new2026", year: 2026,
+      cities: "Beckley",
+      note: "Brand new market." },
+    { state: "South Dakota", abbr: "SD", lat: 43.9695, lng: -99.9018, count: 2, status: "new2026", year: 2026,
+      cities: "Sioux Falls, Rapid City",
+      note: "" },
+    { state: "North Dakota", abbr: "ND", lat: 47.5515, lng: -101.0020, count: 1, status: "new2026", year: 2026,
+      cities: "Fargo",
+      note: "" },
+    { state: "Maryland", abbr: "MD", lat: 39.0458, lng: -76.6413, count: 1, status: "coming", year: 2026,
+      cities: "Abingdon (2912 Emmorton Rd) - opening winter 2026",
+      note: "First MD location. Also eyeing Owings Mills, Eastern Shore, Anne Arundel County." },
+    { state: "California", abbr: "CA", lat: 36.7783, lng: -119.4179, count: 0, status: "coming", year: 2026,
+      cities: "Southern California (franchise agreements signed)",
+      note: "First West Coast entry expected 2026-2027." },
+    { state: "New Mexico", abbr: "NM", lat: 34.5199, lng: -105.8701, count: 0, status: "coming", year: 2026,
+      cities: "TBD (part of 200+ stand development agreement)",
+      note: "Part of TX/FL/OK/NM expansion deal." },
+];
+
+// ─── Color Mapping ──────────────────────────────────────────────────
+function getColor(year, status) {
+    if (status === "coming") return "#facc15";
+    if (status === "new2026") return "#facc15";
+    if (year <= 2017) return "#e94560";
+    if (year <= 2020) return "#f97316";
+    if (year <= 2023) return "#22c55e";
+    if (year === 2024) return "#3b82f6";
+    if (year === 2025) return "#818cf8";
+    return "#facc15";
+}
+
+function getRadius(count) {
+    if (count === 0) return 8;
+    if (count <= 2) return 10;
+    if (count <= 5) return 13;
+    if (count <= 10) return 16;
+    if (count <= 20) return 20;
+    if (count <= 30) return 24;
+    if (count <= 50) return 28;
+    return 34;
+}
+
+function statusLabel(status) {
+    if (status === "open") return '<span class="status-badge status-open">Open</span>';
+    if (status === "coming") return '<span class="status-badge status-coming">Coming Soon</span>';
+    if (status === "new2026") return '<span class="status-badge status-new">New 2026</span>';
+    return '';
+}
+
+// ─── Initialize Map ─────────────────────────────────────────────────
+const map = L.map('map', {
+    center: [39.5, -98.5],
+    zoom: 4,
+    minZoom: 3,
+    maxZoom: 18,
+    zoomControl: true
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20
+}).addTo(map);
+
+// ─── Create Markers ─────────────────────────────────────────────────
+let markers = [];
+
+locations.forEach(loc => {
+    const color = getColor(loc.year, loc.status);
+    const radius = getRadius(loc.count);
+
+    const marker = L.circleMarker([loc.lat, loc.lng], {
+        radius: radius,
+        fillColor: color,
+        color: '#fff',
+        weight: 1.5,
+        opacity: 0.9,
+        fillOpacity: 0.7
+    });
+
+    const countText = loc.count > 0 ? `<strong>${loc.count}</strong> locations` : '<strong>Coming Soon</strong>';
+    const popup = `
+        <div class="popup-title">${loc.state} (${loc.abbr})</div>
+        <div class="popup-detail">
+            ${countText}<br>
+            <strong>Year Entered:</strong> ${loc.year}${loc.status === 'coming' ? ' (Expected)' : ''}<br>
+            <strong>Status:</strong> ${loc.status === 'open' ? 'Open' : loc.status === 'new2026' ? 'Newly Opened 2026' : 'Coming Soon'}<br>
+            <strong>Cities:</strong> ${loc.cities}<br>
+            ${loc.note ? '<em>' + loc.note + '</em>' : ''}
+        </div>
+    `;
+    marker.bindPopup(popup, { maxWidth: 320 });
+
+    marker.locationData = loc;
+    marker.addTo(map);
+    markers.push(marker);
+});
+
+// ─── State List Sidebar ─────────────────────────────────────────────
+function renderStateList(filter) {
+    const list = document.getElementById('stateList');
+    list.innerHTML = '';
+
+    const filtered = locations
+        .filter(loc => {
+            if (filter === 'all') return true;
+            if (filter === 'open') return loc.status === 'open';
+            if (filter === 'coming') return loc.status === 'coming';
+            if (filter === 'new2026') return loc.status === 'new2026';
+            return true;
+        })
+        .sort((a, b) => b.count - a.count);
+
+    filtered.forEach(loc => {
+        const row = document.createElement('div');
+        row.className = 'state-row';
+        row.innerHTML = `
+            <span class="state-name">${loc.state} ${statusLabel(loc.status)}</span>
+            <span class="state-count">${loc.count > 0 ? loc.count : '---'}</span>
+        `;
+        row.addEventListener('click', () => {
+            map.setView([loc.lat, loc.lng], 7, { animate: true });
+            const m = markers.find(m => m.locationData.abbr === loc.abbr);
+            if (m) m.openPopup();
+        });
+        list.appendChild(row);
+    });
+}
+
+// ─── Filter Buttons ─────────────────────────────────────────────────
+let currentFilter = 'all';
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+
+        markers.forEach(m => {
+            const loc = m.locationData;
+            let show = true;
+            if (currentFilter === 'open') show = loc.status === 'open';
+            if (currentFilter === 'coming') show = loc.status === 'coming';
+            if (currentFilter === 'new2026') show = loc.status === 'new2026';
+
+            if (show) {
+                m.setStyle({ fillOpacity: 0.7, opacity: 0.9 });
+            } else {
+                m.setStyle({ fillOpacity: 0.08, opacity: 0.15 });
+            }
+        });
+
+        renderStateList(currentFilter);
+    });
+});
+
+// ─── Initial Render ─────────────────────────────────────────────────
+renderStateList('all');
+</script>
+
+</body>
+</html>
