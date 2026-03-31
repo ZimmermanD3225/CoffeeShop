@@ -72,6 +72,23 @@
             min-height: 0;
         }
 
+        .map-collapse-btn {
+            display: none;
+            position: absolute;
+            top: 8px;
+            right: 50px;
+            z-index: 1000;
+            background: #fff;
+            border: 2px solid #e94560;
+            color: #e94560;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
         .sidebar {
             width: 380px;
             background: #ffffff;
@@ -275,9 +292,13 @@
         }
 
         @media (max-width: 900px) {
-            .main-content { flex-direction: column; }
-            .sidebar { width: 100%; max-height: 45vh; border-left: none; border-top: 2px solid #e0e0e0; }
-            #map { min-height: 55vh; }
+            body { overflow-y: auto; height: auto; }
+            .main-content { flex-direction: column; flex: none; overflow: visible; }
+            .sidebar { width: 100%; max-height: none; border-left: none; border-top: 2px solid #e0e0e0; }
+            #map { height: 40vh; min-height: 200px; flex: none; position: relative; transition: height 0.3s ease; }
+            #map.collapsed { height: 20vh; min-height: 120px; }
+            .map-collapse-btn { display: block; }
+            .state-list { max-height: none; }
         }
     </style>
 </head>
@@ -302,7 +323,9 @@
 </header>
 
 <div class="main-content">
-    <div id="map"></div>
+    <div id="map">
+        <button class="map-collapse-btn" id="mapToggle" onclick="toggleMap()">Shrink Map</button>
+    </div>
 
     <div class="sidebar">
         <div class="sidebar-section">
@@ -371,6 +394,129 @@
         <div class="sidebar-section">
             <h3>Locations by State</h3>
             <div class="state-list" id="stateList"></div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Franchise Strategy</h3>
+            <div style="font-size:0.78rem; color:#636e72; line-height:1.5;">
+                <p style="margin-bottom:10px;">7 Brew uses <strong style="color:#e94560;">Area Development Agreements (ADAs)</strong> - selling exclusive territory rights for entire states or regions to large franchise groups who commit to building dozens or hundreds of stands.</p>
+                <p style="margin-bottom:10px;"><strong style="color:#2d3436;">Blackstone Growth</strong> invested in Feb 2024 (when chain had ~190 locations). Previously backed by Jimmy John Liautaud (Jimmy John's founder) who exited. ~2,500 future stands under development agreements. No longer accepting new franchise applications.</p>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Major Franchise Groups</h3>
+            <div style="font-size:0.75rem; line-height:1.6; color:#636e72;">
+                <div style="margin-bottom:8px; padding:6px; background:#fef2f4; border-radius:6px;">
+                    <strong style="color:#2d3436;">Flynn Group</strong> (largest franchisee globally)<br>
+                    <span style="color:#e94560;">160 units</span> | Territories undisclosed
+                </div>
+                <div style="margin-bottom:8px; padding:6px; background:#fef2f4; border-radius:6px;">
+                    <strong style="color:#2d3436;">7 Crew</strong> (CEO: Kendra Burris)<br>
+                    Backer: Franchise Equity Partners<br>
+                    <span style="color:#e94560;">200+ units</span> | TX, FL, OK, NM
+                </div>
+                <div style="margin-bottom:8px; padding:6px; background:#fef2f4; border-radius:6px;">
+                    <strong style="color:#2d3436;">Brew Crew LLC</strong> (Sebald & Wilson)<br>
+                    <span style="color:#e94560;">150-200+ units</span> | AR, MO, TX, LA, IL, KY, IN
+                </div>
+                <div style="margin-bottom:8px; padding:6px; background:#fef2f4; border-radius:6px;">
+                    <strong style="color:#2d3436;">Motley 7 Brew (M7B)</strong><br>
+                    Backer: Orangewood Partners<br>
+                    <span style="color:#e94560;">125 units</span> | OH, GA, TX
+                </div>
+                <div style="margin-bottom:8px; padding:6px; background:#fef2f4; border-radius:6px;">
+                    <strong style="color:#2d3436;">Piedmont Beverage Co.</strong><br>
+                    Backer: WJ Partners<br>
+                    <span style="color:#e94560;">~100 units</span> | NC, SC, GA
+                </div>
+                <div style="margin-bottom:8px; padding:6px; background:#fef2f4; border-radius:6px;">
+                    <strong style="color:#2d3436;">Southern Brew Corp</strong><br>
+                    Backer: Altamont Capital (via Tacala)<br>
+                    <span style="color:#e94560;">79 units</span> | AL, E. TN, W. GA
+                </div>
+                <div style="margin-bottom:8px; padding:6px; background:#fef2f4; border-radius:6px;">
+                    <strong style="color:#2d3436;">Prospect Capital Restaurants</strong><br>
+                    <span style="color:#e94560;">70 units</span> | Washington D.C. metro
+                </div>
+                <div style="margin-bottom:8px; padding:6px; background:#fef2f4; border-radius:6px;">
+                    <strong style="color:#2d3436;">Meritage Hospitality</strong> (public co.)<br>
+                    <span style="color:#e94560;">64 units</span> | Midwest (by 2030)
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Franchise Costs (2025 FDD)</h3>
+            <div style="font-size:0.75rem; line-height:1.6; color:#636e72;">
+                <div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid #f0f2f5;">
+                    <span>Initial Franchise Fee</span>
+                    <strong style="color:#2d3436;">$35,000</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid #f0f2f5;">
+                    <span>Min. 5-Store Dev Fee</span>
+                    <strong style="color:#2d3436;">$75,000</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid #f0f2f5;">
+                    <span>Total Initial Investment</span>
+                    <strong style="color:#2d3436;">$894K - $2.18M</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid #f0f2f5;">
+                    <span>Ongoing Royalty</span>
+                    <strong style="color:#2d3436;">4.5% - 7%</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid #f0f2f5;">
+                    <span>Avg Unit Volume</span>
+                    <strong style="color:#e94560;">$1.99M</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid #f0f2f5;">
+                    <span>Avg EBITDAR Margin</span>
+                    <strong style="color:#e94560;">29%</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:3px 0;">
+                    <span>2024 Systemwide Sales</span>
+                    <strong style="color:#e94560;">$502M</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Ownership History</h3>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-year">2017</div>
+                    <div class="timeline-text">Founded by Ron Crume in Rogers, AR</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2020</div>
+                    <div class="timeline-text">Brew Culture LLC acquires 7 Brew</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2021</div>
+                    <div class="timeline-text">Jimmy John Liautaud (Jimmy John's) & Jamie Coulter acquire majority stake via Drink House Holdings at 9 units</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2022</div>
+                    <div class="timeline-text">Franchising launches. First franchisees (Brew Crew) open stores. 14 to 38 units.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">Feb 2024</div>
+                    <div class="timeline-text">Blackstone Growth invests. Liautaud/Drink House exits. Chain at ~190 units.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">2025</div>
+                    <div class="timeline-text">500+ locations. $502M systemwide sales. ~2,500 units in development pipeline.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>The Modular Build</h3>
+            <div style="font-size:0.78rem; color:#636e72; line-height:1.5;">
+                <p style="margin-bottom:8px;">All stands are <strong style="color:#2d3436;">~510 sq ft prefab modular units</strong> built by Creative Modular Construction (CMC) in Springfield, MO. Double drive-thru lanes, no indoor seating.</p>
+                <p style="margin-bottom:8px;">Built in-factory in <strong style="color:#e94560;">8-10 weeks</strong> (vs. 18-20 weeks traditional), trucked to site, and crane-dropped onto prepared foundations.</p>
+                <p>CMC produces ~2 buildings/week and is building a <strong style="color:#2d3436;">$30M expansion</strong> to keep up with demand.</p>
+            </div>
         </div>
     </div>
 </div>
@@ -631,6 +777,19 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
         renderStateList(currentFilter);
     });
 });
+
+// ─── Map Toggle for Mobile ──────────────────────────────────────────
+function toggleMap() {
+    const mapEl = document.getElementById('map');
+    const btn = document.getElementById('mapToggle');
+    mapEl.classList.toggle('collapsed');
+    if (mapEl.classList.contains('collapsed')) {
+        btn.textContent = 'Expand Map';
+    } else {
+        btn.textContent = 'Shrink Map';
+    }
+    setTimeout(() => map.invalidateSize(), 350);
+}
 
 // ─── Initial Render ─────────────────────────────────────────────────
 renderStateList('all');
