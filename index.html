@@ -195,6 +195,56 @@
             background: #f0f2f5;
         }
 
+        .state-row.expanded {
+            background: #fef2f4;
+        }
+
+        .state-chevron {
+            font-size: 0.65rem;
+            color: #b2bec3;
+            margin-left: 5px;
+            display: inline-block;
+            transition: transform 0.25s ease;
+        }
+
+        .state-row.expanded .state-chevron {
+            transform: rotate(90deg);
+        }
+
+        .city-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .city-list.open {
+            max-height: 1000px;
+        }
+
+        .city-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 4px 5px 16px;
+            border-bottom: 1px solid #f8f9fa;
+            cursor: pointer;
+            font-size: 0.78rem;
+            color: #636e72;
+            transition: background 0.15s;
+        }
+
+        .city-row:hover {
+            background: #fef2f4;
+            color: #e94560;
+        }
+
+        .city-year {
+            font-size: 0.72rem;
+            color: #b2bec3;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
         .state-name {
             font-size: 0.82rem;
             font-weight: 500;
@@ -646,6 +696,7 @@ const locations = [
     { city: "Belleview", state: "FL", lat: 29.058, lng: -82.063, year: 2026, status: "new2026" },
     { city: "Pensacola", state: "FL", lat: 30.421, lng: -87.217, year: 2024, status: "open" },
     { city: "Gainesville", state: "FL", lat: 29.652, lng: -82.325, year: 2025, status: "open" },
+    { city: "Davenport", state: "FL", lat: 27.913, lng: -81.540, year: 2024, status: "open" },
 
     // ── GEORGIA (2023) ──
     { city: "Atlanta", state: "GA", lat: 33.749, lng: -84.388, year: 2023, status: "open" },
@@ -743,7 +794,6 @@ const locations = [
     // ── IOWA (2024) ──
     { city: "Des Moines", state: "IA", lat: 41.586, lng: -93.625, year: 2024, status: "open" },
     { city: "Cedar Rapids", state: "IA", lat: 41.977, lng: -91.666, year: 2024, status: "open" },
-    { city: "Davenport", state: "IA", lat: 41.524, lng: -90.578, year: 2024, status: "open" },
     { city: "Marshalltown", state: "IA", lat: 42.049, lng: -92.908, year: 2026, status: "coming" },
     { city: "Bettendorf", state: "IA", lat: 41.524, lng: -90.516, year: 2026, status: "coming", note: "Currently under construction" },
 
@@ -864,7 +914,7 @@ function renderStateList(filter) {
     const list = document.getElementById('stateList');
     list.innerHTML = '';
 
-    // Aggregate by state
+    // Aggregate by state, keeping city-level data
     const stateMap = {};
     locations.forEach(loc => {
         let show = true;
@@ -874,15 +924,18 @@ function renderStateList(filter) {
         if (!show) return;
 
         if (!stateMap[loc.state]) {
-            stateMap[loc.state] = { state: loc.state, count: 0, lat: loc.lat, lng: loc.lng, statuses: new Set() };
+            stateMap[loc.state] = { state: loc.state, count: 0, lat: loc.lat, lng: loc.lng, statuses: new Set(), cities: [] };
         }
         stateMap[loc.state].count++;
         stateMap[loc.state].statuses.add(loc.status);
+        stateMap[loc.state].cities.push(loc);
     });
 
     const states = Object.values(stateMap).sort((a, b) => b.count - a.count);
 
     states.forEach(s => {
+        const wrapper = document.createElement('div');
+
         const row = document.createElement('div');
         row.className = 'state-row';
         let badge = '';
@@ -891,13 +944,34 @@ function renderStateList(filter) {
         else badge = statusLabel('open');
 
         row.innerHTML = `
-            <span class="state-name">${s.state} ${badge}</span>
+            <span class="state-name">${s.state} ${badge}<span class="state-chevron">&#9654;</span></span>
             <span class="state-count">${s.count}</span>
         `;
-        row.addEventListener('click', () => {
-            map.setView([s.lat, s.lng], 7, { animate: true });
+
+        const cityList = document.createElement('div');
+        cityList.className = 'city-list';
+
+        s.cities.sort((a, b) => a.city.localeCompare(b.city)).forEach(loc => {
+            const cityRow = document.createElement('div');
+            cityRow.className = 'city-row';
+            const yearLabel = loc.status === 'coming' ? 'Coming Soon' : loc.year;
+            cityRow.innerHTML = `<span>${loc.city}</span><span class="city-year">${yearLabel}</span>`;
+            cityRow.addEventListener('click', e => {
+                e.stopPropagation();
+                map.setView([loc.lat, loc.lng], 11, { animate: true });
+            });
+            cityList.appendChild(cityRow);
         });
-        list.appendChild(row);
+
+        row.addEventListener('click', () => {
+            const expanding = !row.classList.contains('expanded');
+            row.classList.toggle('expanded', expanding);
+            cityList.classList.toggle('open', expanding);
+        });
+
+        wrapper.appendChild(row);
+        wrapper.appendChild(cityList);
+        list.appendChild(wrapper);
     });
 }
 
