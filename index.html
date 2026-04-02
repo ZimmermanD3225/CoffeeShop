@@ -195,9 +195,56 @@
             background: #f0f2f5;
         }
 
+        .state-row.expanded {
+            background: #fef2f4;
+        }
+
         .state-name {
             font-size: 0.82rem;
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .toggle-arrow {
+            font-size: 0.65rem;
+            color: #b2bec3;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+
+        .state-row.expanded .toggle-arrow {
+            transform: rotate(180deg);
+        }
+
+        .city-list {
+            display: none;
+            padding: 4px 4px 6px 8px;
+            border-left: 2px solid #e94560;
+            margin: 0 4px 4px 4px;
+            background: #fef9fa;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .city-list.expanded {
+            display: block;
+        }
+
+        .city-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 4px;
+            font-size: 0.75rem;
+            color: #636e72;
+        }
+
+        .city-year {
+            font-size: 0.72rem;
+            color: #e94560;
+            font-weight: 600;
+            white-space: nowrap;
         }
 
         .state-count {
@@ -736,18 +783,37 @@ function renderStateList(filter) {
         .sort((a, b) => b.count - a.count);
 
     filtered.forEach(loc => {
+        const wrapper = document.createElement('div');
+
         const row = document.createElement('div');
         row.className = 'state-row';
         row.innerHTML = `
-            <span class="state-name">${loc.state} ${statusLabel(loc.status)}</span>
+            <span class="state-name">${loc.state} ${statusLabel(loc.status)} <span class="toggle-arrow">▼</span></span>
             <span class="state-count">${loc.count > 0 ? loc.count : '---'}</span>
         `;
+
+        const cityList = document.createElement('div');
+        cityList.className = 'city-list';
+        const yearLabel = loc.status === 'coming' ? 'Coming Soon' : loc.year;
+        const cities = loc.cities.split(',').map(c => c.trim()).filter(Boolean);
+        cityList.innerHTML = cities.map(city =>
+            `<div class="city-item"><span>${city}</span><span class="city-year">${yearLabel}</span></div>`
+        ).join('');
+
         row.addEventListener('click', () => {
-            map.setView([loc.lat, loc.lng], 7, { animate: true });
-            const m = markers.find(m => m.locationData.abbr === loc.abbr);
-            if (m) m.openPopup();
+            const isExpanded = row.classList.contains('expanded');
+            row.classList.toggle('expanded', !isExpanded);
+            cityList.classList.toggle('expanded', !isExpanded);
+            if (!isExpanded) {
+                map.setView([loc.lat, loc.lng], 7, { animate: true });
+                const m = markers.find(m => m.locationData.abbr === loc.abbr);
+                if (m) m.openPopup();
+            }
         });
-        list.appendChild(row);
+
+        wrapper.appendChild(row);
+        wrapper.appendChild(cityList);
+        list.appendChild(wrapper);
     });
 }
 
