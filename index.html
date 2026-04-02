@@ -275,6 +275,43 @@
 
         .popup-detail strong { color: #e94560; }
 
+        .state-chevron {
+            font-size: 0.75rem;
+            color: #b2bec3;
+            transition: transform 0.2s;
+            margin-left: 4px;
+            display: inline-block;
+        }
+
+        .state-row.expanded .state-chevron {
+            transform: rotate(180deg);
+        }
+
+        .city-sublist {
+            background: #fafbfc;
+            border-bottom: 1px solid #edf0f3;
+            overflow: hidden;
+        }
+
+        .city-row {
+            padding: 5px 8px 5px 22px;
+            font-size: 0.74rem;
+            color: #636e72;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f2f5;
+            transition: background 0.15s;
+            line-height: 1.3;
+        }
+
+        .city-row:hover {
+            background: #fef2f4;
+            color: #e94560;
+        }
+
+        .city-row:last-child {
+            border-bottom: none;
+        }
+
         .state-list::-webkit-scrollbar,
         .sidebar::-webkit-scrollbar {
             width: 6px;
@@ -522,157 +559,439 @@
 </div>
 
 <script>
-// ─── 7 Brew Location Data ───────────────────────────────────────────
-// Compiled from web research (ScrapeHero, search results, news articles, Yelp)
-// Coordinates are representative city centers per state for map display.
-const locations = [
-    // ── FLAGSHIP / ORIGIN (2017) ──
-    { state: "Arkansas", abbr: "AR", lat: 36.3321, lng: -94.1185, count: 41, status: "open", year: 2017,
-      cities: "Rogers (HQ/Original), Bentonville, Springdale, Fayetteville, Little Rock, North Little Rock, Fort Smith, Jonesboro, Conway, Russellville",
-      note: "Birthplace of 7 Brew. Original stand: 2101 S 52nd St, Rogers, AR" },
+// ─── City-Level Location Data ────────────────────────────────────────
+// Each state has a cities array. Cities with count>1 get multiple offset dots.
+// Labels array (optional) provides identifiers; otherwise "Location N" is used.
+const stateData = [
 
-    // ── EARLY EXPANSION (2018-2020) ──
-    { state: "Missouri", abbr: "MO", lat: 38.5767, lng: -92.1736, count: 32, status: "open", year: 2020,
-      cities: "Springfield (7 locations), St. Louis, O'Fallon, Florissant, Columbia, Joplin, Lee's Summit, Kansas City",
-      note: "Springfield alone has 7 stands. Columbia popular with Mizzou students." },
-    { state: "Oklahoma", abbr: "OK", lat: 35.4676, lng: -97.5164, count: 21, status: "open", year: 2020,
-      cities: "Oklahoma City, Tulsa, Norman, Broken Arrow, Edmond, Stillwater",
-      note: "Early expansion market from Arkansas." },
-    { state: "Texas", abbr: "TX", lat: 31.9686, lng: -99.9018, count: 98, status: "open", year: 2020,
-      cities: "Dallas, Fort Worth, Houston, San Antonio, Austin, El Paso, Lubbock, Amarillo, Waco, Tyler, Magnolia, Conroe, Red Oak",
-      note: "#1 state by location count (14% of all stands). 200+ more planned." },
-    { state: "Alabama", abbr: "AL", lat: 32.3182, lng: -86.9023, count: 23, status: "open", year: 2020,
-      cities: "Huntsville, Birmingham, Montgomery, Mobile, Tuscaloosa, Auburn, Decatur",
-      note: "Huntsville stand known for friendly staff and quick service." },
+  // ── FLAGSHIP / ORIGIN (2017) ──
+  { state:"Arkansas", abbr:"AR", status:"open", year:2017,
+    centerLat:35.20, centerLng:-92.20,
+    note:"Birthplace of 7 Brew. Original stand: 2101 S 52nd St, Rogers, AR",
+    cities:[
+      { name:"Rogers",           count:5, lat:36.3321, lng:-94.1185,
+        labels:["S 52nd St (Original, 2017)","W Walnut St","N 2nd St","S Bellview St","Pleasant Grove Rd"] },
+      { name:"Bentonville",      count:5, lat:36.3728, lng:-94.2088 },
+      { name:"Springdale",       count:5, lat:36.1867, lng:-94.1288 },
+      { name:"Fayetteville",     count:6, lat:36.0626, lng:-94.1574 },
+      { name:"Little Rock",      count:8, lat:34.7465, lng:-92.2896 },
+      { name:"North Little Rock",count:3, lat:34.7695, lng:-92.2671 },
+      { name:"Fort Smith",       count:3, lat:35.3859, lng:-94.3985 },
+      { name:"Jonesboro",        count:3, lat:35.8423, lng:-90.7043 },
+      { name:"Conway",           count:2, lat:35.0887, lng:-92.4421 },
+      { name:"Russellville",     count:1, lat:35.2784, lng:-93.1338 },
+    ]},
 
-    // ── GROWTH PHASE (2021-2023) ──
-    { state: "Tennessee", abbr: "TN", lat: 35.5175, lng: -86.5804, count: 21, status: "open", year: 2021,
-      cities: "Nashville, Memphis, Knoxville, Chattanooga, Murfreesboro, Clarksville",
-      note: "" },
-    { state: "Kentucky", abbr: "KY", lat: 37.8393, lng: -84.2700, count: 20, status: "open", year: 2021,
-      cities: "Louisville, Lexington, Bowling Green, Owensboro, Covington",
-      note: "" },
-    { state: "Indiana", abbr: "IN", lat: 40.2672, lng: -86.1349, count: 19, status: "open", year: 2022,
-      cities: "Indianapolis, Fort Wayne, Evansville, South Bend, Carmel, Fishers",
-      note: "" },
-    { state: "Florida", abbr: "FL", lat: 27.6648, lng: -81.5158, count: 29, status: "open", year: 2023,
-      cities: "Tallahassee, Jacksonville, Orlando, Tampa, Lake Worth, Bradenton, Middleburg, Belleview",
-      note: "Dominates 2026 expansion strategy. Multiple new opens in Jan 2026." },
-    { state: "Georgia", abbr: "GA", lat: 32.1656, lng: -82.9001, count: 16, status: "open", year: 2023,
-      cities: "Atlanta, Savannah, Augusta, Macon, Athens, Columbus",
-      note: "Continues to add new locations." },
-    { state: "Mississippi", abbr: "MS", lat: 32.3547, lng: -89.3985, count: 10, status: "open", year: 2023,
-      cities: "Flowood, Jackson, Hattiesburg, Gulfport, Southaven, Tupelo",
-      note: "" },
-    { state: "Louisiana", abbr: "LA", lat: 30.9843, lng: -91.9623, count: 8, status: "open", year: 2023,
-      cities: "Shreveport, Bossier City, Baton Rouge, Lafayette, Monroe",
-      note: "Expanded from Arkansas origins into Louisiana." },
-    { state: "Kansas", abbr: "KS", lat: 39.0119, lng: -98.4842, count: 6, status: "open", year: 2023,
-      cities: "Wichita, Overland Park, Topeka, Olathe, Lawrence",
-      note: "" },
-    { state: "Nebraska", abbr: "NE", lat: 41.4925, lng: -99.9018, count: 4, status: "open", year: 2023,
-      cities: "Omaha, Lincoln, Bellevue",
-      note: "" },
+  // ── EARLY EXPANSION (2018-2020) ──
+  { state:"Missouri", abbr:"MO", status:"open", year:2020,
+    centerLat:38.35, centerLng:-92.50,
+    note:"Springfield alone has 7 stands. Columbia popular with Mizzou students.",
+    cities:[
+      { name:"Springfield",  count:7, lat:37.2153, lng:-93.2982 },
+      { name:"Kansas City",  count:6, lat:39.0997, lng:-94.5786 },
+      { name:"St. Louis",    count:5, lat:38.6270, lng:-90.1994 },
+      { name:"Columbia",     count:4, lat:38.9517, lng:-92.3341 },
+      { name:"Joplin",       count:3, lat:37.0842, lng:-94.5133 },
+      { name:"Lee's Summit", count:3, lat:38.9108, lng:-94.3825 },
+      { name:"O'Fallon",     count:2, lat:38.8106, lng:-90.6998 },
+      { name:"Florissant",   count:2, lat:38.7892, lng:-90.3226 },
+    ]},
 
-    // ── EXPANSION PHASE (2024) ──
-    { state: "Ohio", abbr: "OH", lat: 40.4173, lng: -82.9071, count: 21, status: "open", year: 2024,
-      cities: "Columbus, Cleveland, Cincinnati, Dayton, Toledo, Newark, Powell, Delaware, Lewis Center, Kent",
-      note: "19+ more planned. Sawmill Rd (May 2026), Ikea Way (Oct 2026)." },
-    { state: "Illinois", abbr: "IL", lat: 40.6331, lng: -89.3985, count: 14, status: "open", year: 2024,
-      cities: "Chicago suburbs, Algonquin, East Peoria, Springfield, Rockford, Champaign",
-      note: "East Peoria opening late summer/fall 2026." },
-    { state: "Wisconsin", abbr: "WI", lat: 43.7844, lng: -88.7879, count: 8, status: "open", year: 2024,
-      cities: "Brookfield, Milwaukee, Madison, Green Bay, Appleton",
-      note: "" },
-    { state: "Colorado", abbr: "CO", lat: 39.5501, lng: -105.7821, count: 7, status: "open", year: 2024,
-      cities: "Denver, Colorado Springs, Aurora, Fort Collins",
-      note: "" },
-    { state: "Virginia", abbr: "VA", lat: 37.4316, lng: -78.6569, count: 8, status: "open", year: 2024,
-      cities: "Virginia Beach, Richmond, Danville, Defiance, Norfolk, Chesapeake",
-      note: "Expanding south from PA/NJ into Northern Virginia." },
-    { state: "North Carolina", abbr: "NC", lat: 35.7596, lng: -79.0193, count: 6, status: "open", year: 2024,
-      cities: "Charlotte, Raleigh, Durham, Greensboro, Fayetteville",
-      note: "Charlotte and Raleigh-Durham metro growth planned." },
-    { state: "South Carolina", abbr: "SC", lat: 33.8361, lng: -81.1637, count: 5, status: "open", year: 2024,
-      cities: "Charleston, Columbia, Greenville, Myrtle Beach",
-      note: "" },
-    { state: "Michigan", abbr: "MI", lat: 44.3148, lng: -85.6024, count: 5, status: "open", year: 2024,
-      cities: "Allen Park, Detroit metro, Grand Rapids, Lansing",
-      note: "" },
-    { state: "Iowa", abbr: "IA", lat: 41.8780, lng: -93.0977, count: 4, status: "open", year: 2024,
-      cities: "Des Moines, Cedar Rapids, Marshalltown, Davenport",
-      note: "Marshalltown opening planned." },
+  { state:"Oklahoma", abbr:"OK", status:"open", year:2020,
+    centerLat:35.50, centerLng:-97.50,
+    note:"Early expansion market from Arkansas.",
+    cities:[
+      { name:"Oklahoma City", count:7, lat:35.4676, lng:-97.5164 },
+      { name:"Tulsa",         count:6, lat:36.1540, lng:-95.9928 },
+      { name:"Edmond",        count:3, lat:35.6528, lng:-97.4781 },
+      { name:"Norman",        count:2, lat:35.2226, lng:-97.4395 },
+      { name:"Broken Arrow",  count:2, lat:36.0526, lng:-95.7908 },
+      { name:"Stillwater",    count:1, lat:36.1156, lng:-97.0584 },
+    ]},
 
-    // ── RECENT ENTRIES (2025) ──
-    { state: "New York", abbr: "NY", lat: 42.1657, lng: -74.9481, count: 7, status: "open", year: 2025,
-      cities: "Colonie, Poughkeepsie, Queensbury, Syracuse, Rochester, New Hartford, Cortland, Amherst, Lockport, Dunkirk",
-      note: "61 new locations planned across New York." },
-    { state: "Pennsylvania", abbr: "PA", lat: 41.2033, lng: -77.1945, count: 4, status: "open", year: 2025,
-      cities: "Manchester Township (approved Jan 2026), Pittsburgh area, Allentown",
-      note: "" },
-    { state: "Connecticut", abbr: "CT", lat: 41.6032, lng: -73.0877, count: 2, status: "open", year: 2025,
-      cities: "Orange, North Haven",
-      note: "2 more locations planned." },
-    { state: "Utah", abbr: "UT", lat: 39.3210, lng: -111.0937, count: 3, status: "open", year: 2025,
-      cities: "Provo, Salt Lake City area",
-      note: "" },
-    { state: "Wyoming", abbr: "WY", lat: 43.0760, lng: -107.2903, count: 2, status: "open", year: 2025,
-      cities: "Casper, Cheyenne",
-      note: "" },
-    { state: "Minnesota", abbr: "MN", lat: 46.7296, lng: -94.6859, count: 4, status: "open", year: 2025,
-      cities: "Apple Valley, Vadnais Heights, Minnetonka, Maplewood",
-      note: "Goal: 60+ stands in Twin Cities by 2030." },
+  { state:"Texas", abbr:"TX", status:"open", year:2020,
+    centerLat:31.50, centerLng:-99.00,
+    note:"#1 state by location count (~15% of all stands). 200+ more planned.",
+    cities:[
+      { name:"Houston",     count:18, lat:29.7604, lng:-95.3698 },
+      { name:"Dallas",      count:14, lat:32.7767, lng:-96.7970 },
+      { name:"Fort Worth",  count:11, lat:32.7555, lng:-97.3308 },
+      { name:"San Antonio", count:11, lat:29.4241, lng:-98.4936 },
+      { name:"Austin",      count:10, lat:30.2672, lng:-97.7431 },
+      { name:"Lubbock",     count: 5, lat:33.5779, lng:-101.8552 },
+      { name:"El Paso",     count: 4, lat:31.7619, lng:-106.4850 },
+      { name:"Waco",        count: 4, lat:31.5493, lng:-97.1467 },
+      { name:"Conroe",      count: 4, lat:30.3119, lng:-95.4561 },
+      { name:"Tyler",       count: 4, lat:32.3513, lng:-95.3011 },
+      { name:"Amarillo",    count: 4, lat:35.2220, lng:-101.8313 },
+      { name:"Magnolia",    count: 4, lat:30.2099, lng:-95.7516 },
+      { name:"Red Oak",     count: 3, lat:32.5168, lng:-96.8012 },
+      { name:"Texarkana",   count: 2, lat:33.4251, lng:-94.0477 },
+    ]},
 
-    // ── NEW 2026 / COMING SOON ──
-    { state: "New Jersey", abbr: "NJ", lat: 40.0583, lng: -74.4057, count: 2, status: "new2026", year: 2026,
-      cities: "Clementon (opened Jan 2026), Blackwood, Winslow, Rio Grande",
-      note: "First NJ location opened Jan 2026. 3 more under development." },
-    { state: "West Virginia", abbr: "WV", lat: 38.5976, lng: -80.4549, count: 2, status: "new2026", year: 2026,
-      cities: "Beckley",
-      note: "Brand new market." },
-    { state: "South Dakota", abbr: "SD", lat: 43.9695, lng: -99.9018, count: 2, status: "new2026", year: 2026,
-      cities: "Sioux Falls, Rapid City",
-      note: "" },
-    { state: "North Dakota", abbr: "ND", lat: 47.5515, lng: -101.0020, count: 1, status: "new2026", year: 2026,
-      cities: "Fargo",
-      note: "" },
-    { state: "Maryland", abbr: "MD", lat: 39.0458, lng: -76.6413, count: 1, status: "coming", year: 2026,
-      cities: "Abingdon (2912 Emmorton Rd) - opening winter 2026",
-      note: "First MD location. Also eyeing Owings Mills, Eastern Shore, Anne Arundel County." },
-    { state: "California", abbr: "CA", lat: 36.7783, lng: -119.4179, count: 0, status: "coming", year: 2026,
-      cities: "Southern California (franchise agreements signed)",
-      note: "First West Coast entry expected 2026-2027." },
-    { state: "New Mexico", abbr: "NM", lat: 34.5199, lng: -105.8701, count: 0, status: "coming", year: 2026,
-      cities: "TBD (part of 200+ stand development agreement)",
-      note: "Part of TX/FL/OK/NM expansion deal." },
+  { state:"Alabama", abbr:"AL", status:"open", year:2020,
+    centerLat:32.80, centerLng:-86.80,
+    note:"Huntsville stand known for friendly staff and quick service.",
+    cities:[
+      { name:"Birmingham",  count:6, lat:33.5186, lng:-86.8104 },
+      { name:"Huntsville",  count:5, lat:34.7304, lng:-86.5861 },
+      { name:"Montgomery",  count:4, lat:32.3668, lng:-86.2999 },
+      { name:"Mobile",      count:3, lat:30.6954, lng:-88.0399 },
+      { name:"Tuscaloosa",  count:3, lat:33.2098, lng:-87.5692 },
+      { name:"Auburn",      count:1, lat:32.6099, lng:-85.4808 },
+      { name:"Decatur",     count:1, lat:34.6059, lng:-86.9833 },
+    ]},
+
+  // ── GROWTH PHASE (2021-2023) ──
+  { state:"Tennessee", abbr:"TN", status:"open", year:2021,
+    centerLat:35.80, centerLng:-86.50,
+    note:"",
+    cities:[
+      { name:"Nashville",     count:7, lat:36.1627, lng:-86.7816 },
+      { name:"Memphis",       count:5, lat:35.1495, lng:-90.0490 },
+      { name:"Knoxville",     count:4, lat:35.9606, lng:-83.9207 },
+      { name:"Murfreesboro",  count:2, lat:35.8456, lng:-86.3903 },
+      { name:"Chattanooga",   count:2, lat:35.0456, lng:-85.3097 },
+      { name:"Clarksville",   count:1, lat:36.5298, lng:-87.3595 },
+    ]},
+
+  { state:"Kentucky", abbr:"KY", status:"open", year:2021,
+    centerLat:37.50, centerLng:-85.00,
+    note:"",
+    cities:[
+      { name:"Louisville",     count:8, lat:38.2527, lng:-85.7585 },
+      { name:"Lexington",      count:6, lat:38.0406, lng:-84.5037 },
+      { name:"Bowling Green",  count:3, lat:36.9903, lng:-86.4436 },
+      { name:"Owensboro",      count:2, lat:37.7719, lng:-87.1112 },
+      { name:"Covington",      count:1, lat:39.0837, lng:-84.5085 },
+    ]},
+
+  { state:"Indiana", abbr:"IN", status:"open", year:2022,
+    centerLat:40.00, centerLng:-86.10,
+    note:"",
+    cities:[
+      { name:"Indianapolis", count:8, lat:39.7684, lng:-86.1581 },
+      { name:"Fort Wayne",   count:4, lat:41.0793, lng:-85.1394 },
+      { name:"Carmel",       count:2, lat:39.9784, lng:-86.1180 },
+      { name:"Fishers",      count:2, lat:39.9567, lng:-85.9669 },
+      { name:"Evansville",   count:2, lat:37.9716, lng:-87.5711 },
+      { name:"South Bend",   count:1, lat:41.6764, lng:-86.2520 },
+    ]},
+
+  { state:"Florida", abbr:"FL", status:"open", year:2023,
+    centerLat:28.50, centerLng:-82.50,
+    note:"Dominates 2026 expansion strategy. Multiple new opens in Jan 2026.",
+    cities:[
+      { name:"Jacksonville", count:7, lat:30.3322, lng:-81.6557 },
+      { name:"Orlando",      count:6, lat:28.5383, lng:-81.3792 },
+      { name:"Tampa",        count:6, lat:27.9506, lng:-82.4572 },
+      { name:"Tallahassee",  count:3, lat:30.4383, lng:-84.2807 },
+      { name:"Lake Worth",   count:2, lat:26.6154, lng:-80.0534 },
+      { name:"Bradenton",    count:2, lat:27.4989, lng:-82.5748 },
+      { name:"Middleburg",   count:2, lat:30.0613, lng:-81.8804 },
+      { name:"Belleview",    count:1, lat:29.0561, lng:-82.0554 },
+    ]},
+
+  { state:"Georgia", abbr:"GA", status:"open", year:2023,
+    centerLat:32.50, centerLng:-83.50,
+    note:"Continues to add new locations.",
+    cities:[
+      { name:"Atlanta",   count:7, lat:33.7490, lng:-84.3880 },
+      { name:"Savannah",  count:2, lat:32.0835, lng:-81.0998 },
+      { name:"Augusta",   count:2, lat:33.4735, lng:-82.0105 },
+      { name:"Columbus",  count:2, lat:32.4610, lng:-84.9877 },
+      { name:"Macon",     count:2, lat:32.8407, lng:-83.6324 },
+      { name:"Athens",    count:1, lat:33.9519, lng:-83.3576 },
+    ]},
+
+  { state:"Mississippi", abbr:"MS", status:"open", year:2023,
+    centerLat:32.70, centerLng:-89.70,
+    note:"",
+    cities:[
+      { name:"Jackson",     count:3, lat:32.2988, lng:-90.1848 },
+      { name:"Flowood",     count:2, lat:32.3340, lng:-90.1259 },
+      { name:"Hattiesburg", count:2, lat:31.3271, lng:-89.2903 },
+      { name:"Gulfport",    count:1, lat:30.3674, lng:-89.0928 },
+      { name:"Southaven",   count:1, lat:34.9890, lng:-90.0126 },
+      { name:"Tupelo",      count:1, lat:34.2576, lng:-88.7034 },
+    ]},
+
+  { state:"Louisiana", abbr:"LA", status:"open", year:2023,
+    centerLat:31.00, centerLng:-91.80,
+    note:"Expanded from Arkansas origins into Louisiana.",
+    cities:[
+      { name:"Shreveport",   count:3, lat:32.5252, lng:-93.7502 },
+      { name:"Baton Rouge",  count:2, lat:30.4515, lng:-91.1871 },
+      { name:"Bossier City", count:1, lat:32.5160, lng:-93.7321 },
+      { name:"Lafayette",    count:1, lat:30.2241, lng:-92.0198 },
+      { name:"Monroe",       count:1, lat:32.5093, lng:-92.1193 },
+    ]},
+
+  { state:"Kansas", abbr:"KS", status:"open", year:2023,
+    centerLat:38.50, centerLng:-98.50,
+    note:"",
+    cities:[
+      { name:"Wichita",       count:2, lat:37.6872, lng:-97.3301 },
+      { name:"Overland Park", count:2, lat:38.9822, lng:-94.6708 },
+      { name:"Olathe",        count:1, lat:38.8814, lng:-94.8191 },
+      { name:"Topeka",        count:1, lat:39.0489, lng:-95.6780 },
+    ]},
+
+  { state:"Nebraska", abbr:"NE", status:"open", year:2023,
+    centerLat:41.50, centerLng:-99.00,
+    note:"",
+    cities:[
+      { name:"Omaha",    count:2, lat:41.2565, lng:-95.9345 },
+      { name:"Lincoln",  count:1, lat:40.8136, lng:-96.7026 },
+      { name:"Bellevue", count:1, lat:41.1544, lng:-95.8945 },
+    ]},
+
+  // ── EXPANSION PHASE (2024) ──
+  { state:"Ohio", abbr:"OH", status:"open", year:2024,
+    centerLat:40.40, centerLng:-82.90,
+    note:"19+ more planned. Sawmill Rd (May 2026), Ikea Way (Oct 2026).",
+    cities:[
+      { name:"Columbus",     count:6, lat:39.9612, lng:-82.9988 },
+      { name:"Cleveland",    count:4, lat:41.4993, lng:-81.6944 },
+      { name:"Cincinnati",   count:4, lat:39.1031, lng:-84.5120 },
+      { name:"Dayton",       count:2, lat:39.7589, lng:-84.1916 },
+      { name:"Toledo",       count:2, lat:41.6639, lng:-83.5552 },
+      { name:"Newark",       count:1, lat:40.0581, lng:-82.4013 },
+      { name:"Powell",       count:1, lat:40.1578, lng:-83.0743 },
+      { name:"Lewis Center", count:1, lat:40.1851, lng:-82.9996 },
+    ]},
+
+  { state:"Illinois", abbr:"IL", status:"open", year:2024,
+    centerLat:40.30, centerLng:-89.40,
+    note:"East Peoria opening late summer/fall 2026.",
+    cities:[
+      { name:"Algonquin",   count:3, lat:42.1661, lng:-88.2731 },
+      { name:"Springfield", count:3, lat:39.7817, lng:-89.6501 },
+      { name:"Rockford",    count:2, lat:42.2711, lng:-89.0940 },
+      { name:"Champaign",   count:2, lat:40.1164, lng:-88.2434 },
+      { name:"East Peoria", count:2, lat:40.6686, lng:-89.5420 },
+      { name:"Schaumburg",  count:2, lat:42.0334, lng:-88.0834 },
+    ]},
+
+  { state:"Wisconsin", abbr:"WI", status:"open", year:2024,
+    centerLat:44.00, centerLng:-89.60,
+    note:"",
+    cities:[
+      { name:"Milwaukee",  count:3, lat:43.0389, lng:-87.9065 },
+      { name:"Brookfield", count:2, lat:43.0606, lng:-88.1065 },
+      { name:"Madison",    count:1, lat:43.0731, lng:-89.4012 },
+      { name:"Green Bay",  count:1, lat:44.5133, lng:-88.0133 },
+      { name:"Appleton",   count:1, lat:44.2619, lng:-88.4154 },
+    ]},
+
+  { state:"Colorado", abbr:"CO", status:"open", year:2024,
+    centerLat:39.10, centerLng:-105.40,
+    note:"",
+    cities:[
+      { name:"Denver",           count:3, lat:39.7392, lng:-104.9903 },
+      { name:"Colorado Springs", count:2, lat:38.8339, lng:-104.8214 },
+      { name:"Aurora",           count:1, lat:39.7294, lng:-104.8319 },
+      { name:"Fort Collins",     count:1, lat:40.5853, lng:-105.0844 },
+    ]},
+
+  { state:"Virginia", abbr:"VA", status:"open", year:2024,
+    centerLat:37.40, centerLng:-78.80,
+    note:"Expanding south from PA/NJ into Northern Virginia.",
+    cities:[
+      { name:"Virginia Beach", count:3, lat:36.8529, lng:-75.9780 },
+      { name:"Richmond",       count:2, lat:37.5407, lng:-77.4360 },
+      { name:"Norfolk",        count:1, lat:36.8508, lng:-76.2859 },
+      { name:"Chesapeake",     count:1, lat:36.7682, lng:-76.2875 },
+      { name:"Danville",       count:1, lat:36.5860, lng:-79.3950 },
+    ]},
+
+  { state:"North Carolina", abbr:"NC", status:"open", year:2024,
+    centerLat:35.50, centerLng:-80.00,
+    note:"Charlotte and Raleigh-Durham metro growth planned.",
+    cities:[
+      { name:"Charlotte", count:3, lat:35.2271, lng:-80.8431 },
+      { name:"Raleigh",   count:2, lat:35.7796, lng:-78.6382 },
+      { name:"Durham",    count:1, lat:35.9940, lng:-78.8986 },
+    ]},
+
+  { state:"South Carolina", abbr:"SC", status:"open", year:2024,
+    centerLat:34.00, centerLng:-81.00,
+    note:"",
+    cities:[
+      { name:"Columbia",    count:2, lat:34.0007, lng:-81.0348 },
+      { name:"Charleston",  count:1, lat:32.7765, lng:-79.9311 },
+      { name:"Greenville",  count:1, lat:34.8526, lng:-82.3940 },
+      { name:"Myrtle Beach",count:1, lat:33.6890, lng:-78.8867 },
+    ]},
+
+  { state:"Michigan", abbr:"MI", status:"open", year:2024,
+    centerLat:43.50, centerLng:-85.00,
+    note:"",
+    cities:[
+      { name:"Detroit metro", count:2, lat:42.3314, lng:-83.0458 },
+      { name:"Grand Rapids",  count:2, lat:42.9634, lng:-85.6681 },
+      { name:"Allen Park",    count:1, lat:42.2572, lng:-83.2108 },
+    ]},
+
+  { state:"Iowa", abbr:"IA", status:"open", year:2024,
+    centerLat:41.90, centerLng:-93.50,
+    note:"",
+    cities:[
+      { name:"Des Moines",   count:2, lat:41.5868, lng:-93.6250 },
+      { name:"Cedar Rapids", count:1, lat:41.9779, lng:-91.6656 },
+      { name:"Marshalltown", count:1, lat:42.0494, lng:-92.9080 },
+    ]},
+
+  // ── RECENT ENTRIES (2025) ──
+  { state:"New York", abbr:"NY", status:"open", year:2025,
+    centerLat:42.90, centerLng:-75.50,
+    note:"61 new locations planned across New York.",
+    cities:[
+      { name:"Colonie",      count:1, lat:42.7173, lng:-73.8357 },
+      { name:"Poughkeepsie", count:1, lat:41.7004, lng:-73.9210 },
+      { name:"Queensbury",   count:1, lat:43.3506, lng:-73.6901 },
+      { name:"Syracuse",     count:1, lat:43.0481, lng:-76.1474 },
+      { name:"Rochester",    count:1, lat:43.1566, lng:-77.6088 },
+      { name:"Amherst",      count:1, lat:42.9784, lng:-78.8003 },
+      { name:"Lockport",     count:1, lat:43.1706, lng:-78.6906 },
+    ]},
+
+  { state:"Pennsylvania", abbr:"PA", status:"open", year:2025,
+    centerLat:40.90, centerLng:-77.70,
+    note:"",
+    cities:[
+      { name:"York (Manchester Twp)", count:2, lat:39.9626, lng:-76.7247 },
+      { name:"Pittsburgh",            count:1, lat:40.4406, lng:-79.9959 },
+      { name:"Allentown",             count:1, lat:40.6023, lng:-75.4714 },
+    ]},
+
+  { state:"Connecticut", abbr:"CT", status:"open", year:2025,
+    centerLat:41.60, centerLng:-72.70,
+    note:"2 more locations planned.",
+    cities:[
+      { name:"Orange",     count:1, lat:41.2787, lng:-73.0268 },
+      { name:"North Haven",count:1, lat:41.3912, lng:-72.8590 },
+    ]},
+
+  { state:"Utah", abbr:"UT", status:"open", year:2025,
+    centerLat:39.50, centerLng:-111.10,
+    note:"",
+    cities:[
+      { name:"Salt Lake City area", count:2, lat:40.7608, lng:-111.8910 },
+      { name:"Provo",               count:1, lat:40.2338, lng:-111.6585 },
+    ]},
+
+  { state:"Wyoming", abbr:"WY", status:"open", year:2025,
+    centerLat:43.10, centerLng:-107.30,
+    note:"",
+    cities:[
+      { name:"Casper",   count:1, lat:42.8666, lng:-106.3131 },
+      { name:"Cheyenne", count:1, lat:41.1400, lng:-104.8202 },
+    ]},
+
+  { state:"Minnesota", abbr:"MN", status:"open", year:2025,
+    centerLat:44.80, centerLng:-93.30,
+    note:"Goal: 60+ stands in Twin Cities by 2030.",
+    cities:[
+      { name:"Apple Valley",   count:1, lat:44.7319, lng:-93.2177 },
+      { name:"Vadnais Heights",count:1, lat:45.0583, lng:-93.0788 },
+      { name:"Minnetonka",     count:1, lat:44.9211, lng:-93.4687 },
+      { name:"Maplewood",      count:1, lat:44.9525, lng:-93.0255 },
+    ]},
+
+  // ── NEW 2026 / COMING SOON ──
+  { state:"New Jersey", abbr:"NJ", status:"new2026", year:2026,
+    centerLat:39.90, centerLng:-74.70,
+    note:"First NJ location opened Jan 2026. 3 more under development.",
+    cities:[
+      { name:"Clementon", count:1, lat:39.8101, lng:-75.0024,
+        labels:["Jan 2026 opening"] },
+      { name:"Blackwood", count:1, lat:39.7979, lng:-75.0679 },
+    ]},
+
+  { state:"West Virginia", abbr:"WV", status:"new2026", year:2026,
+    centerLat:38.60, centerLng:-80.50,
+    note:"Brand new market.",
+    cities:[
+      { name:"Beckley", count:2, lat:37.7782, lng:-81.1882 },
+    ]},
+
+  { state:"South Dakota", abbr:"SD", status:"new2026", year:2026,
+    centerLat:44.30, centerLng:-100.40,
+    note:"",
+    cities:[
+      { name:"Sioux Falls", count:1, lat:43.5446, lng:-96.7311 },
+      { name:"Rapid City",  count:1, lat:44.0805, lng:-103.2310 },
+    ]},
+
+  { state:"North Dakota", abbr:"ND", status:"new2026", year:2026,
+    centerLat:47.55, centerLng:-101.00,
+    note:"",
+    cities:[
+      { name:"Fargo", count:1, lat:46.8772, lng:-96.7898 },
+    ]},
+
+  { state:"Maryland", abbr:"MD", status:"coming", year:2026,
+    centerLat:39.05, centerLng:-76.64,
+    note:"First MD location. Also eyeing Owings Mills, Eastern Shore, Anne Arundel County.",
+    cities:[
+      { name:"Abingdon", count:1, lat:39.4723, lng:-76.3380,
+        labels:["2912 Emmorton Rd – opening winter 2026"] },
+    ]},
+
+  { state:"California", abbr:"CA", status:"coming", year:2026,
+    centerLat:36.78, centerLng:-119.42,
+    note:"First West Coast entry expected 2026-2027.",
+    cities:[] },
+
+  { state:"New Mexico", abbr:"NM", status:"coming", year:2026,
+    centerLat:34.52, centerLng:-105.87,
+    note:"Part of TX/FL/OK/NM expansion deal.",
+    cities:[] },
 ];
 
-// ─── Color Mapping ──────────────────────────────────────────────────
-function getColor(year, status) {
-    if (year <= 2017) return "#e94560";   // Red - Founding
-    if (year <= 2019) return "#ff6b6b";   // Light red - Early AR
-    if (year === 2020) return "#f97316";  // Orange - First multi-state
-    if (year === 2021) return "#e67e22";  // Dark orange
-    if (year === 2022) return "#f1c40f";  // Yellow
-    if (year === 2023) return "#2ecc71";  // Green
-    if (year === 2024) return "#3498db";  // Blue
-    if (year === 2025) return "#9b59b6";  // Purple
-    if (year === 2026) return "#1abc9c";  // Teal - New/Coming
+// ─── Helpers ────────────────────────────────────────────────────────
+function stateTotal(sd) {
+    return (sd.cities || []).reduce((s, c) => s + c.count, 0);
+}
+
+// Returns array of [lat, lng] positions for N locations at a city center
+function cityOffsets(n, lat, lng) {
+    if (n === 1) return [[lat, lng]];
+    const r = n <= 3 ? 0.030 : n <= 6 ? 0.040 : 0.055;
+    return Array.from({length: n}, (_, i) => {
+        const angle = (2 * Math.PI * i / n) - Math.PI / 2;
+        return [lat + r * Math.cos(angle), lng + r * Math.sin(angle)];
+    });
+}
+
+function getColor(year) {
+    if (year <= 2017) return "#e94560";
+    if (year <= 2019) return "#ff6b6b";
+    if (year === 2020) return "#f97316";
+    if (year === 2021) return "#e67e22";
+    if (year === 2022) return "#f1c40f";
+    if (year === 2023) return "#2ecc71";
+    if (year === 2024) return "#3498db";
+    if (year === 2025) return "#9b59b6";
+    if (year === 2026) return "#1abc9c";
     return "#95a5a6";
 }
 
-function getRadius(count) {
-    return 7;
-}
-
 function statusLabel(status) {
-    if (status === "open") return '<span class="status-badge status-open">Open</span>';
-    if (status === "coming") return '<span class="status-badge status-coming">Coming Soon</span>';
+    if (status === "open")    return '<span class="status-badge status-open">Open</span>';
+    if (status === "coming")  return '<span class="status-badge status-coming">Coming Soon</span>';
     if (status === "new2026") return '<span class="status-badge status-new">New 2026</span>';
     return '';
 }
 
-// ─── Initialize Map ─────────────────────────────────────────────────
+function statusText(status) {
+    if (status === "open")    return "Open";
+    if (status === "new2026") return "Newly Opened 2026";
+    return "Coming Soon";
+}
+
+// ─── Initialize Map ──────────────────────────────────────────────────
 const map = L.map('map', {
     center: [39.5, -98.5],
     zoom: 4,
@@ -686,72 +1005,128 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19
 }).addTo(map);
 
-// ─── Create Markers ─────────────────────────────────────────────────
+// ─── Create Markers ──────────────────────────────────────────────────
 let markers = [];
 
-locations.forEach(loc => {
-    const color = getColor(loc.year, loc.status);
-    const radius = getRadius(loc.count);
+stateData.forEach(sd => {
+    const color = getColor(sd.year);
+    (sd.cities || []).forEach(city => {
+        const positions = cityOffsets(city.count, city.lat, city.lng);
+        positions.forEach((pos, i) => {
+            const rawLabel = city.labels && city.labels[i] ? city.labels[i] : (city.count > 1 ? `Location ${i + 1}` : null);
+            const displayName = rawLabel ? `${city.name} – ${rawLabel}` : city.name;
 
-    const marker = L.circleMarker([loc.lat, loc.lng], {
-        radius: radius,
-        fillColor: color,
-        color: '#fff',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.85
+            const marker = L.circleMarker(pos, {
+                radius: 7,
+                fillColor: color,
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.85
+            });
+
+            marker.bindPopup(`
+                <div class="popup-title">${displayName}</div>
+                <div class="popup-detail">
+                    <strong>State:</strong> ${sd.state}<br>
+                    <strong>Year Entered:</strong> ${sd.year}${sd.status === 'coming' ? ' (Expected)' : ''}<br>
+                    <strong>Status:</strong> ${statusText(sd.status)}<br>
+                    ${sd.note ? '<em>' + sd.note + '</em>' : ''}
+                </div>
+            `, { maxWidth: 300 });
+
+            marker.stateData = sd;
+            marker.cityData  = city;
+            marker.locIndex  = i;
+            marker.addTo(map);
+            markers.push(marker);
+        });
     });
-
-    const countText = loc.count > 0 ? `<strong>${loc.count}</strong> locations` : '<strong>Coming Soon</strong>';
-    const popup = `
-        <div class="popup-title">${loc.state} (${loc.abbr})</div>
-        <div class="popup-detail">
-            ${countText}<br>
-            <strong>Year Entered:</strong> ${loc.year}${loc.status === 'coming' ? ' (Expected)' : ''}<br>
-            <strong>Status:</strong> ${loc.status === 'open' ? 'Open' : loc.status === 'new2026' ? 'Newly Opened 2026' : 'Coming Soon'}<br>
-            <strong>Cities:</strong> ${loc.cities}<br>
-            ${loc.note ? '<em>' + loc.note + '</em>' : ''}
-        </div>
-    `;
-    marker.bindPopup(popup, { maxWidth: 320 });
-
-    marker.locationData = loc;
-    marker.addTo(map);
-    markers.push(marker);
 });
 
-// ─── State List Sidebar ─────────────────────────────────────────────
+// ─── Sidebar Accordion ───────────────────────────────────────────────
 function renderStateList(filter) {
     const list = document.getElementById('stateList');
     list.innerHTML = '';
 
-    const filtered = locations
-        .filter(loc => {
-            if (filter === 'all') return true;
-            if (filter === 'open') return loc.status === 'open';
-            if (filter === 'coming') return loc.status === 'coming';
-            if (filter === 'new2026') return loc.status === 'new2026';
+    const filtered = stateData
+        .filter(sd => {
+            if (filter === 'all')     return true;
+            if (filter === 'open')    return sd.status === 'open';
+            if (filter === 'coming')  return sd.status === 'coming';
+            if (filter === 'new2026') return sd.status === 'new2026';
             return true;
         })
-        .sort((a, b) => b.count - a.count);
+        .sort((a, b) => stateTotal(b) - stateTotal(a));
 
-    filtered.forEach(loc => {
+    filtered.forEach(sd => {
+        const total = stateTotal(sd);
+        const hasCities = sd.cities && sd.cities.length > 0;
+
+        // ── State header row ──
         const row = document.createElement('div');
         row.className = 'state-row';
         row.innerHTML = `
-            <span class="state-name">${loc.state} ${statusLabel(loc.status)}</span>
-            <span class="state-count">${loc.count > 0 ? loc.count : '---'}</span>
+            <span class="state-name">${sd.state} ${statusLabel(sd.status)}</span>
+            <span style="display:flex;align-items:center;gap:4px">
+                <span class="state-count">${total > 0 ? total : '---'}</span>
+                ${hasCities ? '<span class="state-chevron">▾</span>' : ''}
+            </span>
         `;
-        row.addEventListener('click', () => {
-            map.setView([loc.lat, loc.lng], 7, { animate: true });
-            const m = markers.find(m => m.locationData.abbr === loc.abbr);
-            if (m) m.openPopup();
-        });
+
+        // ── City sub-list ──
+        const subList = document.createElement('div');
+        subList.className = 'city-sublist';
+        subList.style.display = 'none';
+
+        if (hasCities) {
+            sd.cities.forEach(city => {
+                const positions = cityOffsets(city.count, city.lat, city.lng);
+
+                if (city.count === 1) {
+                    const cr = document.createElement('div');
+                    cr.className = 'city-row';
+                    const lbl = city.labels && city.labels[0] ? `${city.name} – ${city.labels[0]}` : city.name;
+                    cr.textContent = lbl;
+                    cr.addEventListener('click', e => {
+                        e.stopPropagation();
+                        map.setView([city.lat, city.lng], 13, { animate: true });
+                        const m = markers.find(m => m.cityData === city && m.locIndex === 0);
+                        if (m) m.openPopup();
+                    });
+                    subList.appendChild(cr);
+                } else {
+                    for (let i = 0; i < city.count; i++) {
+                        const lbl = city.labels && city.labels[i] ? city.labels[i] : `Location ${i + 1}`;
+                        const cr = document.createElement('div');
+                        cr.className = 'city-row';
+                        cr.textContent = `${city.name} – ${lbl}`;
+                        const idx = i;
+                        cr.addEventListener('click', e => {
+                            e.stopPropagation();
+                            map.setView(positions[idx], 14, { animate: true });
+                            const m = markers.find(m => m.cityData === city && m.locIndex === idx);
+                            if (m) m.openPopup();
+                        });
+                        subList.appendChild(cr);
+                    }
+                }
+            });
+
+            row.addEventListener('click', () => {
+                const open = subList.style.display !== 'none';
+                subList.style.display = open ? 'none' : 'block';
+                row.classList.toggle('expanded', !open);
+                if (!open) map.setView([sd.centerLat, sd.centerLng], 6, { animate: true });
+            });
+        }
+
         list.appendChild(row);
+        list.appendChild(subList);
     });
 }
 
-// ─── Filter Buttons ─────────────────────────────────────────────────
+// ─── Filter Buttons ──────────────────────────────────────────────────
 let currentFilter = 'all';
 
 document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -761,37 +1136,27 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
         currentFilter = btn.dataset.filter;
 
         markers.forEach(m => {
-            const loc = m.locationData;
             let show = true;
-            if (currentFilter === 'open') show = loc.status === 'open';
-            if (currentFilter === 'coming') show = loc.status === 'coming';
-            if (currentFilter === 'new2026') show = loc.status === 'new2026';
-
-            if (show) {
-                m.setStyle({ fillOpacity: 0.7, opacity: 0.9 });
-            } else {
-                m.setStyle({ fillOpacity: 0.08, opacity: 0.15 });
-            }
+            if (currentFilter === 'open')    show = m.stateData.status === 'open';
+            if (currentFilter === 'coming')  show = m.stateData.status === 'coming';
+            if (currentFilter === 'new2026') show = m.stateData.status === 'new2026';
+            m.setStyle({ fillOpacity: show ? 0.85 : 0.08, opacity: show ? 1 : 0.15 });
         });
 
         renderStateList(currentFilter);
     });
 });
 
-// ─── Map Toggle for Mobile ──────────────────────────────────────────
+// ─── Map Toggle for Mobile ───────────────────────────────────────────
 function toggleMap() {
     const mapEl = document.getElementById('map');
     const btn = document.getElementById('mapToggle');
     mapEl.classList.toggle('collapsed');
-    if (mapEl.classList.contains('collapsed')) {
-        btn.textContent = 'Expand Map';
-    } else {
-        btn.textContent = 'Shrink Map';
-    }
+    btn.textContent = mapEl.classList.contains('collapsed') ? 'Expand Map' : 'Shrink Map';
     setTimeout(() => map.invalidateSize(), 350);
 }
 
-// ─── Initial Render ─────────────────────────────────────────────────
+// ─── Initial Render ──────────────────────────────────────────────────
 renderStateList('all');
 </script>
 
