@@ -1704,6 +1704,41 @@ const hyperLocations = [
     { city: "Elkhorn", state: "NE", lat: 41.260, lng: -96.383, address: "3561 N 181st St" },
 ];
 
+// ─── Color Mapping ──────────────────────────────────────────────────
+function getColor(year, status) {
+    if (year <= 2017) return "#e94560";   // Red - Founding
+    if (year <= 2019) return "#ff6b6b";   // Light red - Early AR
+    if (year === 2020) return "#f97316";  // Orange - First multi-state
+    if (year === 2021) return "#e67e22";  // Dark orange
+    if (year === 2022) return "#f1c40f";  // Yellow
+    if (year === 2023) return "#2ecc71";  // Green
+    if (year === 2024) return "#3498db";  // Blue
+    if (year === 2025) return "#9b59b6";  // Purple
+    if (year === 2026) return "#1abc9c";  // Teal - New/Coming
+    return "#95a5a6";
+}
+
+function statusLabel(status) {
+    if (status === "open") return '<span class="status-badge status-open">Open</span>';
+    if (status === "coming") return '<span class="status-badge status-coming">Coming Soon</span>';
+    if (status === "new2026") return '<span class="status-badge status-new">New 2026</span>';
+    return '';
+}
+
+// ─── Initialize Map ─────────────────────────────────────────────────
+const map = L.map('map', {
+    center: [39.5, -98.5],
+    zoom: 4,
+    minZoom: 3,
+    maxZoom: 18,
+    zoomControl: true
+});
+
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
+}).addTo(map);
+
 // ─── Competitor Layers ───────────────────────────────────────────────
 
 const competitorConfig = {
@@ -1765,41 +1800,6 @@ document.querySelectorAll('.comp-toggle').forEach(toggle => {
         }
     });
 });
-
-// ─── Color Mapping ──────────────────────────────────────────────────
-function getColor(year, status) {
-    if (year <= 2017) return "#e94560";   // Red - Founding
-    if (year <= 2019) return "#ff6b6b";   // Light red - Early AR
-    if (year === 2020) return "#f97316";  // Orange - First multi-state
-    if (year === 2021) return "#e67e22";  // Dark orange
-    if (year === 2022) return "#f1c40f";  // Yellow
-    if (year === 2023) return "#2ecc71";  // Green
-    if (year === 2024) return "#3498db";  // Blue
-    if (year === 2025) return "#9b59b6";  // Purple
-    if (year === 2026) return "#1abc9c";  // Teal - New/Coming
-    return "#95a5a6";
-}
-
-function statusLabel(status) {
-    if (status === "open") return '<span class="status-badge status-open">Open</span>';
-    if (status === "coming") return '<span class="status-badge status-coming">Coming Soon</span>';
-    if (status === "new2026") return '<span class="status-badge status-new">New 2026</span>';
-    return '';
-}
-
-// ─── Initialize Map ─────────────────────────────────────────────────
-const map = L.map('map', {
-    center: [39.5, -98.5],
-    zoom: 4,
-    minZoom: 3,
-    maxZoom: 18,
-    zoomControl: true
-});
-
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    maxZoom: 19
-}).addTo(map);
 
 // ─── Create Markers ─────────────────────────────────────────────────
 let markers = [];
