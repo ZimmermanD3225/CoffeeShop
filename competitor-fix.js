@@ -1,4 +1,3 @@
-// Competitor layer toggle fix - runs after DOM and map are ready
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     if (typeof map === 'undefined' || typeof competitorConfig === 'undefined') return;
@@ -21,39 +20,38 @@ document.addEventListener('DOMContentLoaded', function() {
       compLayers[key] = L.layerGroup(markers);
     });
 
-    // Find competitor row elements and wire click handlers
-    var allDivs = document.querySelectorAll('div');
-    allDivs.forEach(function(div) {
-      var text = div.textContent;
-      var key = null;
-      if (text.indexOf('Dutch Bros') >= 0 && text.indexOf('1,181') >= 0) key = 'dutchbros';
-      else if (text.indexOf('Black Rock') >= 0 && text.indexOf('~180') >= 0) key = 'blackrock';
-      else if (text.indexOf('Hyper Energy') >= 0 && text.indexOf('11+') >= 0) key = 'hyper';
+    window.toggleCompetitor = function(key) {
+      var layer = compLayers[key];
+      if (!layer) return;
+      if (map.hasLayer(layer)) {
+        map.removeLayer(layer);
+      } else {
+        layer.addTo(map);
+      }
+    };
 
-      if (key && !div.querySelector('h3') && div.children.length <= 5) {
-        div.style.cursor = 'pointer';
-        div.addEventListener('click', function() {
-          var layer = compLayers[key];
-          if (map.hasLayer(layer)) {
-            map.removeLayer(layer);
-            div.style.opacity = '0.5';
-            div.style.borderColor = '#333';
+    var labels = document.querySelectorAll('label.comp-toggle');
+    labels.forEach(function(label) {
+      var text = label.textContent;
+      var key = null;
+      if (text.indexOf('Dutch') >= 0) key = 'dutchbros';
+      else if (text.indexOf('Black') >= 0) key = 'blackrock';
+      else if (text.indexOf('Hyper') >= 0) key = 'hyper';
+      if (key) {
+        label.style.cursor = 'pointer';
+        label.addEventListener('click', function(e) {
+          e.preventDefault();
+          toggleCompetitor(key);
+          if (map.hasLayer(compLayers[key])) {
+            label.style.opacity = '1';
+            label.style.borderLeft = '4px solid ' + colors[key];
           } else {
-            layer.addTo(map);
-            div.style.opacity = '1';
-            div.style.borderColor = colors[key];
+            label.style.opacity = '0.5';
+            label.style.borderLeft = '4px solid transparent';
           }
         });
       }
     });
-
-    window.toggleCompetitor = function(key) {
-      var layer = compLayers[key];
-      if (layer) {
-        if (map.hasLayer(layer)) map.removeLayer(layer);
-        else layer.addTo(map);
-      }
-    };
 
     console.log('Competitor layers initialized:', Object.keys(compLayers));
   }, 1000);
